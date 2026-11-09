@@ -17,7 +17,7 @@ describe("hypertrophy engine",()=>{
     expect(v.triceps).toBe(1.5);
   });
   it("increases load when all sets reach top of range",()=>{
-    expect(suggestLoad(EXERCISES[0],history)).toBe(26);
+    expect(suggestLoad(EXERCISES.find(e=>e.id==="incline-db-press")!,history)).toBe(26);
   });
   it("respects equipment and exclusions",()=>{
     const p=generateWorkout(history,{durationMinutes:30,availableEquipment:["dumbbell"],excludedExerciseIds:["incline-db-press"],now:new Date("2026-11-09T12:00:00.000Z")});
