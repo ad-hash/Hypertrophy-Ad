@@ -16,6 +16,7 @@ export default function HypertrophyPage() {
   const [plan,setPlan] = useState<Prescription[]>([]);
   const [mode,setMode] = useState<"train"|"history"|"volume"|"progress">("train");
   const [trackedExercise,setTrackedExercise] = useState("incline-db-press");
+  const [metric,setMetric] = useState<"bestWeight"|"estimatedOneRepMax"|"totalVolumeKg">("bestWeight");
   const progress=useMemo(()=>exerciseProgress(history,trackedExercise),[history,trackedExercise]);
   const [entries,setEntries] = useState<{exerciseId:string;sets:LoggedSet[]}[]>([]);
   useEffect(()=>{setHistory(loadWorkouts());setReady(true);},[]);
@@ -88,9 +89,23 @@ export default function HypertrophyPage() {
       {mode==="volume"&&<section className="space-y-3"><h2 className="font-semibold">Hard sets · last 7 days</h2>
         {Object.entries(volume).map(([muscle,count])=><div key={muscle}><div className="flex justify-between text-sm capitalize"><span>{muscle}</span><span>{count.toFixed(1)}</span></div>
           <div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${Math.min(100,count/12*100)}%`}}/></div></div>)}</section>}
-      {mode==="progress"&&<section className="space-y-4"><h2 className="font-semibold">Strength progression</h2>
-        <select aria-label="Tracked exercise" className="w-full rounded-lg border bg-background p-2" value={trackedExercise} onChange={e=>setTrackedExercise(e.target.value)}>{EXERCISES.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>
-        {progress.length===0?<p className="text-sm text-muted-foreground">Log this exercise to see your progress.</p>:<div className="rounded-xl border p-3"><p className="mb-3 text-xs text-muted-foreground">Estimated 1RM (kg) · indicative, not a true max test</p><div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={progress}><CartesianGrid strokeDasharray="3 3" opacity={0.15}/><XAxis dataKey="date" tick={{fontSize:10}}/><YAxis domain={["auto","auto"]} width={35}/><Tooltip/><Line type="monotone" dataKey="estimatedOneRepMax" stroke="#f06a4b" strokeWidth={2} dot/></LineChart></ResponsiveContainer></div></div>}
+      {mode==="progress"&&<section className="space-y-4">
+        <h2 className="font-semibold">Training progress</h2>
+        <label className="block text-xs text-muted-foreground">Exercise
+          <select aria-label="Tracked exercise" className="mt-2 w-full rounded-lg border bg-background p-3 text-sm text-foreground" value={trackedExercise} onChange={e=>setTrackedExercise(e.target.value)}>{EXERCISES.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>
+        </label>
+        <div className="grid grid-cols-3 gap-2">{([
+          ["bestWeight","Heaviest kg"],
+          ["estimatedOneRepMax","Est. 1RM"],
+          ["totalVolumeKg","Volume"]
+        ] as const).map(([key,label])=><button key={key} onClick={()=>setMetric(key)} className={`rounded-xl border px-2 py-3 text-xs font-semibold ${metric===key?"bg-primary text-primary-foreground":"bg-muted text-foreground"}`}>{label}</button>)}</div>
+        {progress.length===0?<p className="text-sm text-muted-foreground">No recorded sessions for this exercise yet.</p>:<div className="rounded-xl border p-3 space-y-3">
+          <div><p className="text-xs text-muted-foreground">{metric==="bestWeight"?"Heaviest recorded load (kg)":metric==="estimatedOneRepMax"?"Estimated 1-rep max (kg)":"Recorded load × reps (kg-reps)"}</p>
+          <p className="text-2xl font-bold">{progress.at(-1)?.[metric]}<span className="ml-1 text-xs font-normal text-muted-foreground">{metric==="totalVolumeKg"?"kg-reps":"kg"}</span></p></div>
+          <div className="h-64 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={progress} margin={{top:8,right:8,left:-12,bottom:8}}><CartesianGrid strokeDasharray="3 3" opacity={0.15}/><XAxis dataKey="date" tick={{fontSize:10}} minTickGap={25}/><YAxis domain={["auto","auto"]} tick={{fontSize:11}}/><Tooltip contentStyle={{background:"#24262c",border:"1px solid #555",borderRadius:10}}/><Line type="monotone" dataKey={metric} name={metric==="bestWeight"?"Heaviest load":metric==="estimatedOneRepMax"?"Estimated 1RM":"Volume"} stroke="#f06a4b" strokeWidth={2.5} dot={{r:3}} activeDot={{r:6}}/></LineChart></ResponsiveContainer></div>
+          <p className="text-xs text-muted-foreground">{progress.length} recorded sessions · {progress[0]?.date} to {progress.at(-1)?.date}</p>
+        </div>}
+        <p className="text-xs text-muted-foreground">Dumbbell weights are per hand; pull-up and dip loads are added weight. Volume is based on recorded sets only. Estimated 1RM is calculated, not tested. Comparisons across different machines or gyms may be unreliable.</p>
       </section>}
       <footer className="text-xs text-muted-foreground">Saved on this device. Export your history regularly; browser data can be cleared.</footer>
     </div></main>;
